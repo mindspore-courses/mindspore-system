@@ -1,8 +1,6 @@
-# mindspore-system
 
-## MindSpore-introduction
-
-### 1 昇思MindSpore定位
+# 昇思MindSore简介
+## 昇思MindSpore定位
 
 昇思MindSpore是面向“端-边-云”全场景设计的AI框架，旨在弥合AI算法研究与生产部署之间的鸿沟。在算法研究阶段，为开发者提供动静统一的编程体验以提升算法的开发效率；生产阶段，自动并行可以极大加快分布式训练的开发和调试效率，同时充分挖掘异构硬件的算力；在部署阶段，基于“端-边-云”统一架构，应对企业级部署和安全可信方面的挑战。开源以来，秉持全场景协同、全流程极简、全架构统一三大价值主张，致力于增强开发易用性、提升原生支持大模型和AI+科学计算的体验。” 向上使能AI模型创新，对下兼容多样性算力（NPU、GPU、CPU）。
 
@@ -12,7 +10,7 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 
 ![01MindSpore-introduction.png](01MindSpore-introduction.png)
 
-### 2 昇思MindSpore架构
+## 昇思MindSpore架构
 
 昇思MindSpore整体架构分为四层（如图 1所示）：
 
