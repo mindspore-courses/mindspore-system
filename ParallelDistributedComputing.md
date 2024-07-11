@@ -6,7 +6,7 @@
 
 昇思MindSpore在并行化策略搜索中引入了张量重排布技术（Tensor Redistribution, TR），这使输出张量的设备布局在输入到后续算子之前能够被转换，如图中红色矩形所示。昇思MindSpore识别算子在不同输入数据切片下的输出数据overlap情况，并基于此进行切片推导，自动生成对应的张量重排计划。基于此计划，可以统一表达数据并行、模型并行等多种并行策略。
 
-![./images/04Parallel-and-Distributed-Computing01.png](./images/04Parallel-and-Distributed-Computing01.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing01.png)
 
 同时昇思MindSpore面向分布式训练，还提供了pipeline并行、优化器并行、重计算等多种并行策略供开发者使用
 
@@ -39,7 +39,7 @@
 
 在训练新模型时，多次配置shard，耗时耗力。在这种情况下，如果配置了自动并行（auto-parallel），则不需要调用shard方法，该算法将找到一个有效的策略。例如，当ResNet中的分类数量超过130K时，算法返回的策略导致在50ms内训练一个迭代。相比之下，原始数据并行训练一次迭代超过111ms。
 
-![./images/04Parallel-and-Distributed-Computing02.png](./images/04Parallel-and-Distributed-Computing02.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing02.png)
 
 **注：每个举行代表一个层级（算子），其高度表示该层级中可学习参数的相对大小**
 
@@ -49,7 +49,7 @@
 
 昇思MindSpore的动态图模式下，可以通过@jit的装饰符，指定某一段以图模式编译执行，在前向执行的同时，会将执行的算子、子图记录下来，前向执行完毕后，会对得到的整图进行自动微分得到反向图，具体流程如下图所示：
 
-![./images/04Parallel-and-Distributed-Computing03.png](./images/04Parallel-and-Distributed-Computing03.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing03.png)
 
 函数式算子切分沿用此模式，不同的是可以指定某一段在图模式的编译执行环节进行算子级模型并行。算子级并行是通过将网络模型中每个算子涉及到的张量进行切分，降低单个设备的内存消耗。
 
@@ -57,17 +57,17 @@
 
 流水线（Pipeline）并行是将神经网络中的算子切分成多个阶段（Stage），再把阶段映射到不同的设备上，使得不同设备去计算神经网络的不同部分。流水线并行适用于模型是线性的图结构。能够降低模型训练过程中的通信量，极大的提升集群的训练性能。
 
-![./images/04Parallel-and-Distributed-Computing04.png](./images/04Parallel-and-Distributed-Computing04.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing04.png)
 
 如图所示，将4层MatMul的网络切分成4个阶段，分布到4台设备上。正向计算时，每台机器在算完本台机器上的MatMul之后将结果通过通信算子发送（Send）给下一台机器，同时，下一台机器通过通信算子接收（Receive）上一台机器的MatMul结果，同时开始计算本台机器上的MatMul；反向计算时，最后一台机器的梯度算完之后，将结果发送给上一台机器，同时，上一台机器接收最后一台机器的梯度结果，并开始计算本台机器的反向。
 
 简单地将模型切分到多设备上并不会带来性能的提升，因为模型的线性结构到时同一时刻只有一台设备在工作，而其它设备在等待，造成了资源的浪费。为了提升效率，流水线并行进一步将小批次（mini-batch）切分成更细粒度的微批次（micro-batch），在微批次中采用流水线式的执行序，从而达到提升效率的目的，如下图所示。将小批次切分成4个微批次，4个微批次在4个组上执行形成流水线。微批次的梯度汇聚后用来更新参数，其中每台设备只存有并更新对应组的参数。其中白色序号代表微批次的索引。
 
-![./images/04Parallel-and-Distributed-Computing05.png](./images/04Parallel-and-Distributed-Computing05.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing05.png)
 
 昇思MindSpore支持流水线并行，并对执行序进行了调整，来达到更优的内存管理。如下图所示，在第0 MicroBatch的正向执行完后立即执行其反向，这样做使得第0 MicroBatch的中间结果的内存得以更早地（相较于上图）释放，进而确保内存使用的峰值比上图的方式更低。
 
-![./images/04Parallel-and-Distributed-Computing06.png](./images/04Parallel-and-Distributed-Computing06.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing06.png)
 
 ### MoE并行
 
@@ -75,37 +75,12 @@
 
 当每条训练数据仅会路由到较少FFN时，这种并行方式会非常有效，因为大大降低了内存使用，同时产生的通信量是较小的。
 
-![./images/04Parallel-and-Distributed-Computing07.png](./images/04Parallel-and-Distributed-Computing07.png)
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing07.png)
 
 ### 异构并行训练
 
 异构并行训练方法通过将占用内存较大的参数存储于Host内存，解决单卡上无法存储完整模型的问题。通过分析图上算子内存占用和计算密集度，将内存消耗巨大或适合CPU逻辑处理的算子切分到CPU子图，将内存消耗较小计算密集型算子切分到硬件加速器子图，框架协同不同子图进行网络训练，使得处于不同硬件且无依赖关系的子图能够并行进行执行的过程。目前昇思MindSpore最多可以支持单机8卡训练和推理千亿模型，极大的降低训练卡所需的资源。
 
-![./images/04Parallel-and-Distributed-Computing08.png](./images/04Parallel-and-Distributed-Computing08.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing08.png)
 
 

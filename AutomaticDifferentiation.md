@@ -6,7 +6,10 @@
 - 基于动态计算图的转换：以算子重载的方式记录前向执行时网络的操作轨迹，然后将链式规则应用到动态生成的数据流图中，实现自动微分。
 - 基于源码的转换：该技术是从函数式编程框架演化而来，对中间表达（程序在编译过程中的表达形式），以即时（Just-In-Time，JIT）编译的形式进行自动微分变换，支持复杂的流程控制场景、高阶函数和闭包。基于源码转化的自动微分如下图所示。
 
-![./images/02Automatic-Differentiation.png](./images/02Automatic-Differentiation.png)
+
+![AutomaticDifferentiation](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/02AutomaticDifferentiation.png)
+
+
 
 TensorFlow早期采用静态计算图，而PyTorch采用动态计算图。静态图可以利用静态编译技术优化网络性能，但是组建或调试网络非常复杂。使用动态图非常方便，但很难在性能上达到极限优化。
 

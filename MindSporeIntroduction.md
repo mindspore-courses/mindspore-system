@@ -9,7 +9,7 @@ To B：面向AI计算中心、电信、制造、金融、互联网、交通、�
 
 To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、车机、耳机、平板、PC等消费级设备；
 
-![./images/01MindSpore-Introduction01.png](./images/01MindSpore-Introduction01.png)
+![MindSporeIntroduction.png](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/01MindSporeIntroduction01.png)
 
 ## 昇思MindSpore架构
 
@@ -20,4 +20,4 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 - **编译优化（MindCompiler）**，作为AI框架的核心，以全场景统一中间表达（MindIR）为媒介，将前端表达编译成执行效率更高的底层语言，同时进行全局性能优化，包括自动微分、代数化简等硬件无关优化，以及图算融合、算子生成等硬件相关优化；
 - **运行时**，按照上层编译优化的结果对接并调用底层硬件算子，同时通过“端 - 边 - 云”统一的运行时架构， 支持包括联邦学习在内的“端 - 边 - 云”AI 协同。
 
-![./images/01MindSpore-Introduction02.png](./images/01MindSpore-Introduction02.png)
+![MindSporeIntroduction.png](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/01MindSporeIntroduction02.png)

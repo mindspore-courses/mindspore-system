@@ -12,7 +12,7 @@
 
 JIT Fallback是从静态图的角度出发考虑静动统一。通过JIT Fallback特性，静态图可以支持尽量多的动态图语法，使得静态图提供接近动态图的语法使用体验，从而实现动静统一。JIT Fallback特性主要作用于MindCompiler编译器，应用于图模式场景下的Python语法解析和支持，将纯底层算子执行的计算图改造成，开发者的Python代码和算子执行交替混合执行的计算图。主要过程如下：
 
-![03静态图.png](03静态图.png)
+![ComputationalGraph](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/03ComputationalGraphs.png)
 
 JIT Fallback特性主要作用于MindCompiler编译器的实现，应用于图模式场景下的Python语法解析和支持，将纯底层算子执行的计算图改造成，开发者的Python代码和算子执行交替混合执行的计算图。主要过程包括：
 1)	检测不支持语法。在图编译阶段，识别检测出图模式不支持的Python语法。
