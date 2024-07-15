@@ -1,5 +1,5 @@
 
-# 昇思MindSpore介绍
+# AI框架MindSpore介绍
 
 ## 昇思MindSpore定位
 
