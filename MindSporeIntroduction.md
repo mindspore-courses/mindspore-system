@@ -33,37 +33,37 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 - 构造训练过程函数；
 - 调用函数进行训练。
 
-1.	# Class definition  
-2.	class Net(nn.Cell):  
-3.	    def __init__(self):  
-4.	        ......  
-5.	    def construct(self, inputs):  
-6.	        ......  
-7.	  
-8.	# Object instantiation  
-9.	net = Net() # network  
-10.	loss_fn = nn.CrossEntropyLoss() # loss function  
-11.	optimizer = nn.Adam(net.trainable_params(), lr) # optimizer  
-12.	  
-13.	# define forward function  
-14.	def forword_fn(inputs, targets):  
-15.	    logits = net(inputs)  
-16.	    loss = loss_fn(logits, targets)  
-17.	    return loss, logits  
-18.	  
-19.	# get grad function  
-20.	grad_fn = value_and_grad(forward_fn, None, optim.parameters, has_aux=True)  
-21.	  
-22.	# define train step function 
-23.	def train_step(inputs, targets):  
-24.	     # get values and gradients  
-25.	    (loss, logits), grads = grad_fn(inputs, targets) 
-26.	    optimizer(grads) # update gradient  
-27.	    return loss, logits  
-28.	  
-29.	for i in range(epochs):  
-30.	    for inputs, targets in dataset():  
-31.	        loss = train_step(inputs, targets) 
+  # Class definition  
+  class Net(nn.Cell):  
+      def __init__(self):  
+          ......  
+      def construct(self, inputs):  
+          ......  
+    
+  # Object instantiation  
+  net = Net() # network  
+  loss_fn = nn.CrossEntropyLoss() # loss function  
+  optimizer = nn.Adam(net.trainable_params(), lr) # optimizer  
+    
+  # define forward function  
+  def forword_fn(inputs, targets):  
+      logits = net(inputs)  
+      loss = loss_fn(logits, targets)  
+      return loss, logits  
+    
+  # get grad function  
+  grad_fn = value_and_grad(forward_fn, None, optim.parameters, has_aux=True)  
+    
+  # define train step function 
+  def train_step(inputs, targets):  
+      # get values and gradients  
+      (loss, logits), grads = grad_fn(inputs, targets) 
+      optimizer(grads) # update gradient  
+      return loss, logits  
+    
+  for i in range(epochs):  
+      for inputs, targets in dataset():  
+          loss = train_step(inputs, targets) 
 
 
 
@@ -103,7 +103,13 @@ JIT Fallback特性主要作用于MindCompiler编译器的实现，应用于图�
 MindSpore Federated是华为昇思MindSpore提出的一款开源联邦学习框架，支持千万级无状态终端设备商用化部署，在用户数据留存在本地的情况下，使能全场景智能应用。MindSpore Federated专注于大规模参与方的横向联邦的应用场景，使参与联邦学习的各用户在不共享本地数据的前提下共建AI模型。MindSpore Federated主要解决隐私安全、大规模联邦聚合、半监督联邦学习、通信压缩和跨平台部署等联邦学习在工业场景部署的难点。
 
 ### 超大规模AI
+昇思MindSpore针对DL网络越来越大，需要复杂而多种分布式并行策略的问题，框架内置提供了多维分布式训练策略，可供开发者灵活组装使用。并且通过并行抽象，隐藏通讯操作，简化开发者并行编程的复杂度。甚至通过自动的并行策略搜索，提供透明且高效分布式训练能力。“透明”是指开发者只需更改一行配置，提交一个版本的Python代码，就可以在多个设备上运行这一版本的Python代码进行训练。“高效”是指该算法以最小的代价选择并行策略，降低了计算和通信开销。
 
+昇思MindSpore在并行化策略搜索中引入了张量重排布技术（Tensor Redistribution, TR），这使输出张量的设备布局在输入到后续算子之前能够被转换，如图中红色矩形所示。昇思MindSpore识别算子在不同输入数据切片下的输出数据overlap情况，并基于此进行切片推导，自动生成对应的张量重排计划。基于此计划，可以统一表达数据并行、模型并行等多种并行策略。
+
+![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing01.png)
+
+同时昇思MindSpore面向分布式训练，还提供了pipeline并行、优化器并行、重计算等多种并行策略供开发者使用。
 
 ### 极致性能，发挥硬件实力
 昇思MindSpore基于编译技术，提供了丰富的硬件无关优化，如IR融合、代数化简、常数折叠、公共子表达式消除等。同时昇思MindSpore针对NPU、GPU等不同硬件，也提供各种硬件优化能力，从而更好的发挥硬件的大规模计算加速能力。
