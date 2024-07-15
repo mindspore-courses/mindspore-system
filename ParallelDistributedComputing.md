@@ -8,21 +8,20 @@
 
 昇思MindSpore针对上述三个挑战，推出了完整的大模型训练解决方案。作为一种通用的技术方案，能够以较高效率实现万亿模型的训练。第一，为了实现通信算子的自动微分，昇思MindSpore定义了通信算子的反向算子。例如，AllGather的反向算子为ReduceScatter。定义这些反向算子十分重要，因为Auto-diff过程可以一次性地区分整个前向图，而无须跳过任何算子，这也是为什么Auto-diff是Auto-parallel后面一步的原因。针对第二个挑战，在同时考虑计算和通信开销的情况下，建立一个代价模型来选择一个好策略。为了快速地为复杂大图找到一个好策略，提出了几种方法：一种是支持多图操作的算法，将原始图转换成线性图；一种是策略分离机制，在保证返回解的精度的同时，有效地缩小搜索空间。例如，ResNet50在8台设备上搜索并行策略的时间在1s内，而返回的解决方案确实缩短了训练时间。例如，当模型较大（类的数量超过128K）时，返回的解决方案与原始数据并行策略相比减少了大约55%的训练时间。第三，昇思MindSpore内置了多种并行技术，以易用的接口提供了混合并行、流水线并行、异构训练和优化器并行等技术，结合这些技术就可以较高的训练效率实现大模型训练。
 
-'''
+```python
+class Submodel(nn.Cell):
 
-    class Submodel(nn.Cell):
-    
-        def __init__(self, shape):
-            super().__init__()
-            self.bn = BatchNorm().shard(((4, 1), ))
-            self.matmul = MatMul().shard(((1, 1), (1, 4)))
-            self.W = Parameter(Tensor(shape), require_grad=True)
-    
-        def construct(self, X):
-            Y = self.bn(X)
-            Z = self.matmul(Y, self.W)
-            return Z
-'''
+    def __init__(self, shape):
+        super().__init__()
+        self.bn = BatchNorm().shard(((4, 1), ))
+        self.matmul = MatMul().shard(((1, 1), (1, 4)))
+        self.W = Parameter(Tensor(shape), require_grad=True)
+
+    def construct(self, X):
+        Y = self.bn(X)
+        Z = self.matmul(Y, self.W)
+        return Z
+```
 ## 算子级别并行
 
 昇思MindSpore支持开发者指定的高级策略配置，称之为半自动并行（semi-auto-parallel）。在以上代码和图示中，展示了一个从数据到模型的并行转换的例子。该子模型的结构为BatchNorm算子后跟一个MatMul算子，广泛应用于ResNet、ReID等分类任务。在BatchNorm算子中，X按行拆分为四部分，数据可以并行，效率非常高。在MatMul算子中，可学习参数的权重W被分成四部分，模型可以并行，由于参数数量较多，这部分的模型并行更有效。由于BatchNorm的输出布局与MatMul的输入布局不同，所以框架插入了一个张量重排布（该例中为AllGather和ConCat），这一过程对开发者是透明的。开发者也不必关注哪个设备运行了模型的哪个部分，框架会自动安排。然而，不同的模型结构在每个算子中具有不同大小的参数，如下图三种广泛使用的子结构所示，并且它们使用于不同的切分策略。在下图 三种广泛使用的子结构 (3)中，将第一算子配置为模型并行，将后续算子配置为数据并行，也需要插入张量重排布，这样可以获得更好的性能。
@@ -72,5 +71,3 @@
 异构并行训练方法通过将占用内存较大的参数存储于Host内存，解决单卡上无法存储完整模型的问题。通过分析图上算子内存占用和计算密集度，将内存消耗巨大或适合CPU逻辑处理的算子切分到CPU子图，将内存消耗较小计算密集型算子切分到硬件加速器子图，框架协同不同子图进行网络训练，使得处于不同硬件且无依赖关系的子图能够并行进行执行的过程。目前昇思MindSpore最多可以支持单机8卡训练和推理千亿模型，极大的降低训练卡所需的资源。
 
 ![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing08.png)
-
-
