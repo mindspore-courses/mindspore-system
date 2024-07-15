@@ -26,16 +26,165 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 
 ## 昇思MindSpore特性
 昇思MindSpore为开发者提供Python等语言的编程范式。借助基于源码转换，开发者可以使用原生Python控制语法和其他一些高级API，如元组（Tuple）、列表（List）和Lambda表达。
-### 前端编程（函数式与面向对象混合编程）
-考虑到神经网络模型构建和训练流程的灵活性和易用性需求，结合昇思MindSpore自身的函数式自动微分机制，昇思MindSpore针对AI模型训练设计了函数式+面向对象融合编程范式，可以兼顾面向对象编程和函数式编程的优势，同时使用同一套自动微分机制实现深度学习反向传播和科学计算自动微分的兼容，从底层支持AI和科学计算建模的兼容。下面是函数式+面向对象融合编程的典型过程：
-用类构建神经网络；
-- 实例化神经网络对象；
-- 构造正向函数，连接神经网络和损失函数；
-- 使用函数变换，获得梯度计算（反向传播）函数；
-- 构造训练过程函数；
-- 调用函数进行训练。
+3.1 前端编程（函数式与面向对象混合编程）
+昇思MindSpore提供面向对象和面向函数的编程范式。开发者可以基于nn.cell类派生定义所需功能的AI网络或网络的某一层（layer），并可通过对象的嵌套调用的方式将已定义的各种layer进行组装，完成整个AI网络的定义。同时开发者也可以定义一个可被昇思MindSpore源到源编译转换的Python纯函数，通过昇思MindSpore提供的函数或装饰器，将其加速执行。
+昇思MindSpore是面向AI和科学计算的融合框架，在支持AI编程基础上原生支持numpy、scipy/pandas等科学计算库。基于昇思MindSpore构建庞大的领域套件库，包括各类传统AI套件、AI4S、强化学习、推荐系统等。
+3.1.1 函数式与面向对象混合编程、自动微分
+编程范式（Programming paradigm）是指编程语言的编程风格或编程方式。通常情况下，AI框架均依赖前端编程接口所使用的编程语言的编程范式进行神经网络的构造和训练。同时AI+科学计算新算法兴起，二者结合，在传统AI神经网络结构与反向自动微分编程表达的基础上，新增了许多新的挑战，如对高级高阶微分、微分函数表达等的支持等。昇思MindSpore充分考虑AI+科学计算融合计算框架的需求并为提升框架使用的灵活性和易用性，提出了函数式+面向对象融合编程范式，有效地体现了函数式自动微分机制的优势。
+下面分别介绍昇思MindSpore支持的三类编程范式及其简单示例。
+3.1.1.1 面向对象编程
+面向对象编程（Object-oriented programming，OOP），是指一种将程序分解为封装数据及相关操作的模块（类）而进行的编程方式，对象为类（class）的实例。面向对象编程将对象作为程序的基本单元，将程序和数据封装其中，以提高软件的重用性、灵活性和扩展性，对象里的程序可以访问及经常修改对象相关联的数据。
+在一般的编程场景中，代码（code）和数据（data）是两个核心构成部分。面向对象编程是针对特定对象（Object）来设计数据结构，定义类（Class）。类通常由以下两部分构成，分别对应了code和data：
+	方法（Methods）
+	属性（Attributes）
+对于同一个Class实例化（instantiation）后得到的不同对象而言，方法和属性相同，不同的是属性的值。不同的属性值决定了对象的内部状态，因此OOP能够很好地进行状态管理。
+下面为Python构造简单类的示例：
+1.	class Sample:  #class declaration
+2.	
+3.	    def __init__(self, name):  # class constructor (code)
+4.	        self.name = name  # attribute (data)
+5.	
+6.	    def set_name(self, name):  # method declaration (code)
+7.	        self.name = name  # method implementation (code)
 
+代码 1
+对于构造神经网络来说，首要的组件就是网络层（Layer），一个神经网络层包含以下部分：
+	Tensor操作（Operation）
+	权重（Weights）
+此二者恰好与类的Methods和Attributes一一对应，同时权重本身就是神经网络层的内部状态，因此使用类来构造Layer天然符合其定义。此外，我们在编程时希望使用神经网络层进行堆叠，构造深度神经网络，使用OOP编程可以很容易地通过Layer对象组合构造新的Layer类。
+下面为使用昇思MindSpore构造神经网络类的示例：
+1.	from mindspore import nn, Parameter
+2.	from mindspore.common.initializer import initializer
+3.	
+4.	
+5.	class Linear(nn.Cell):
+6.	
+7.	    def __init__(self, in_features, out_features,
+8.	                 has_bias):  # class constructor (code)
+9.	        super().__init__()
+10.	        self.weight = Parameter(
+11.	            initializer('normal', [out_features, in_features],
+12.	                        mindspore.float32), 'weight')  # layer weight (data)
+13.	        self.bias = Parameter(
+14.	            initializer('zeros', [out_features], mindspore.float32),
+15.	            'bias')  # layer weight (data)
+16.	
+17.	    def construct(self, inputs):  # method declaration (code)
+18.	        output = ops.matmul(inputs, self.weight.transpose(
+19.	            0, 1))  # tensor transformation (code)
+20.	        output = output + self.bias  # tensor transformation (code)
+21.	        return output
+代码 2
+除神经网络层的构造使用面向对象编程范式外，昇思MindSpore支持纯面向对象编程方式构造神经网络训练逻辑，此时神经网络的正向计算、反向传播、梯度优化等操作均使用类进行构造。下面是纯面向对象编程的示例：
+1.	import mindspore  
+2.	import mindspore.nn as nn  
+3.	from mindspore import value_and_grad  
+4.	  
+5.	 
+6.	class TrainOneStepCell(nn.Cell):  
+7.	  
+8.	    def __init__(self, network, optimizer):  
+9.	        super().__init__()  
+10.	        self.network = network  
+11.	        self.optimizer = optimizer  
+12.	        self.grad_fn = value_and_grad(self.network, None,  
+13.	                                      self.optimizer.parameters)  
+14.	  
+15.	    def construct(self, *inputs):  
+16.	        loss, grads = self.grad_fn(*inputs)  
+17.	        self.optimizer(grads)  
+18.	        return loss  
+19.	  
+20.	  
+21.	network = nn.Dense(5, 3)  
+22.	loss_fn = nn.BCEWithLogitsLoss()  
+23.	network_with_loss = nn.WithLossCell(network, loss_fn)  
+24.	optimizer = nn.SGD(network.trainable_params(), 0.001)  
+25.	trainer = TrainOneStepCell(network_with_loss, optimizer) 
+代码 3
+此时，不论是神经网络及其训练过程均使用继承nn.Cell的类进行管理，可以方便地作为计算图进行编译加速。
+3.1.1.2 函数式编程
+函数式编程（Functional programming）是一种将计算机运算视为函数运算，并且避免使用程序状态以及可变对象的编程范式。
+在函数式编程中，函数被视为一等公民，这意味着它们可以绑定到名称（包括本地标识符），作为参数传递，并从其他函数返回，就像任何其他数据类型一样。这允许以声明性和可组合的风格编写程序，其中小功能以模块化方式组合。函数式编程有时被视为纯函数式编程的同义词，是将所有函数视为确定性数学函数或纯函数的函数式编程的一个子集。当使用一些给定参数调用纯函数时，它将始终返回相同的结果，并且不受任何可变状态或其他副作用的影响。
+函数式编程有两个核心特点，使其十分符合科学计算的需要：
+	编程函数语义与数学函数语义完全对等。
+	确定性，给定相同输入必然返回相同输出。无副作用。
+由于确定性这一特点，通过限制副作用，程序可以有更少的错误，更容易调试和测试，更适合形式验证。
+昇思MindSpore提供纯函数式编程的支持，配合mindspore.numpy及mindspore.scipy提供的数值计算接口，可以便捷地进行科学计算编程。下面是使用函数式编程的示例：
+1.	import mindspore.numpy as mnp
+2.	from mindspore import grad
+3.	
+4.	grad_tanh = grad(mnp.tanh)
+5.	print(grad_tanh(2.0))
+6.	# 0.070650816
+7.	
+8.	print(grad(grad(mnp.tanh))(2.0))
+9.	print(grad(grad(grad(mnp.tanh)))(2.0))
+10.	# -0.13621868
+11.	# 0.25265405
+
+代码 4
+配合函数式编程范式的需要，昇思MindSpore提供了多种函数变换接口，涵盖包括自动微分、自动向量化、自动并行、即时编译、数据下沉等功能模块，下面简单进行介绍：
+	自动微分：grad、value_and_grad，提供微分函数变换功能；
+	自动向量化：vamp，用于沿参数轴映射函数fn的高阶函数；
+	自动并行：shard，函数式算子切分，指定函数输入/输出Tensor的分布策略；
+	即时编译：jit，将Python函数编译为一张可调用的MindSpore图；
+	数据下沉：data_sink，对输入的函数进行变换，获得可使用数据下沉模式的函数。
+基于上述函数变换接口，在使用函数式编程范式时可以快速高效地使用函数变换实现复杂的功能。
+3.1.1.3 函数式+面向对象融合编程
+考虑到神经网络模型构建和训练流程的灵活性和易用性需求，结合昇思MindSpore自身的函数式自动微分机制，昇思MindSpore针对AI模型训练设计了函数式+面向对象融合编程范式，可以兼顾面向对象编程和函数式编程的优势，同时使用同一套自动微分机制实现深度学习反向传播和科学计算自动微分的兼容，从底层支持AI和科学计算建模的兼容。下面是函数式+面向对象融合编程的典型过程：
+	用类构建神经网络；
+	实例化神经网络对象；
+	构造正向函数，连接神经网络和损失函数；
+	使用函数变换，获得梯度计算（反向传播）函数；
+	构造训练过程函数；
+	调用函数进行训练。
+下面是函数式+面向对象融合编程的简单示例：
+1.	# Class definition  
+2.	class Net(nn.Cell):  
+3.	    def __init__(self):  
+4.	        ......  
+5.	    def construct(self, inputs):  
+6.	        ......  
+7.	  
+8.	# Object instantiation  
+9.	net = Net() # network  
+10.	loss_fn = nn.CrossEntropyLoss() # loss function  
+11.	optimizer = nn.Adam(net.trainable_params(), lr) # optimizer  
+12.	  
+13.	# define forward function  
+14.	def forword_fn(inputs, targets):  
+15.	    logits = net(inputs)  
+16.	    loss = loss_fn(logits, targets)  
+17.	    return loss, logits  
+18.	  
+19.	# get grad function  
+20.	grad_fn = value_and_grad(forward_fn, None, optim.parameters, has_aux=True)  
+21.	  
+22.	# define train step function 
+23.	def train_step(inputs, targets):  
+24.	     # get values and gradients  
+25.	    (loss, logits), grads = grad_fn(inputs, targets) 
+26.	    optimizer(grads) # update gradient  
+27.	    return loss, logits  
+28.	  
+29.	for i in range(epochs):  
+30.	    for inputs, targets in dataset():  
+31.	        loss = train_step(inputs, targets) 
+代码 5
+如上述示例，在神经网络构造时，使用面向对象编程，神经网络层的构造方式符合AI编程的习惯。在进行前向计算和反向传播时，昇思MindSpore使用函数式编程，将前向计算构造为函数，然后通过函数变换，获得grad_fn，最后通过执行grad_fn获得权重对应的梯度。
 通过函数式+面向对象融合编程，既保证了神经网络构建的易用性，同时提高了前向计算和反向传播等训练过程的灵活性，是昇思MindSpore推荐的默认编程范式。
+3.1.1.4 函数式微分编程
+目前主流的深度学习框架有三种自动微分技术：
+	基于静态计算图的转换：在编译时将网络转换为静态数据流图，然后将链式规则转换为数据流图，实现自动微分。
+	基于动态计算图的转换：以算子重载的方式记录前向执行时网络的操作轨迹，然后将链式规则应用到动态生成的数据流图中，实现自动微分。
+	基于源码的转换：该技术是从函数式编程框架演化而来，对中间表达（程序在编译过程中的表达形式），以即时（Just-In-Time，JIT）编译的形式进行自动微分变换，支持复杂的流程控制场景、高阶函数和闭包。基于源码转化的自动微分如错误!未找到引用源。所示。
+ 
+图 2 基于源码转换的自动微分
+TensorFlow早期采用静态计算图，而PyTorch采用动态计算图。静态图可以利用静态编译技术优化网络性能，但是组建或调试网络非常复杂。使用动态图非常方便，但很难在性能上达到极限优化。
+昇思MindSpore开发了一种新的策略，即基于源码转换的自动微分。一方面，它支持流程控制的自动微分，因此构建像PyTorch这样的模型非常方便。另一方面，昇思MindSpore可以对神经网络进行静态编译优化，从而获得良好的性能。
+昇思MindSpore自动微分的实现可以理解为对程序本身进行符号微分，因为MindSpore IR是函数式的中间表达，它与基本代数中的复合函数有直观的对应关系，只要已知基础函数的求导公式，就能推导出由任意基础函数组成的复合函数的求导公式。MindSpore IR中每个原语操作可以对应为基础代数中的基础函数，这些基础函数可以构建更复杂的流程控制。
+
 ### 动静统一
 传统AI框架主要有2种编程执行形态，静态图模式和动态图模式。静态图模式会基于开发者调用的框架接口，在编译执行时先生成神经网络的图结构，然后再执行图中涉及的计算操作。静态图模式能有效感知神经网络各层算子间的关系情况，基于编译技术进行有效的编译优化以提升性能。但传统静态图需要开发者感知构图接口，组建或调试网络比较复杂，且难于与常用Python库、自定义Python函数进行穿插使用。动态图模式，能有效解决静态图的编程较复杂问题，但由于程序按照代码的编写顺序执行，系统难于进行整图编译优化，导致相对性能优化空间较少，特别面向DSA等专有硬件的优化比较难于使能。
 
@@ -84,7 +233,7 @@ MindSpore Federated是华为昇思MindSpore提出的一款开源联邦学习框�
 ![ParallelDistributedComputing](https://raw.githubusercontent.com/mindspore-courses/mindspore-system/master/images/04ParallelDistributedComputing01.png)
 
 同时昇思MindSpore面向分布式训练，还提供了pipeline并行、优化器并行、重计算等多种并行策略供开发者使用。
-
+技术细节详见: 昇思MindSpore超大规模AI技术介绍
 ### 极致性能，发挥硬件实力
 昇思MindSpore基于编译技术，提供了丰富的硬件无关优化，如IR融合、代数化简、常数折叠、公共子表达式消除等。同时昇思MindSpore针对NPU、GPU等不同硬件，也提供各种硬件优化能力，从而更好的发挥硬件的大规模计算加速能力。
 昇思MindSpore除了提供传统AI框架常用优化，还提供了一些比较有特色的技术：
@@ -103,6 +252,49 @@ Host侧CPU负责将图或算子下发到昇腾芯片。昇腾芯片由于具备�
 图 31 昇思MindSpore计算图训练处理流程
 
 **算法优化、Boost优化、二阶优化等**：
+
+算法优化、Boost优化、二阶优化等
+梯度累积
+梯度累积是一种将训练神经网络的数据样本按Batch size拆分为几个小Batch的方式，然后按顺序进行计算。
+深度学习模型由许多相互连接的神经网络单元所组成，在所有神经网络层中，样本数据会不断向前传播。在通过所有层后，网络模型会输出样本的预测值，通过损失函数然后计算每个样本的损失值（误差）。神经网络通过反向传播，去计算损失值相对于模型参数的梯度。最后这些梯度信息用于对网络模型中的参数进行更新。
+梯度累积只计算神经网络模型，并不及时更新网络模型的参数，同时在计算的时候累积得到的梯度信息，最后统一使用累积的梯度来对参数进行更新。
+accumulated=∑_(i=0)^N▒〖grad_i 〗
+在不更新模型变量的时候，实际上是把原来的数据Batch size分成几个小的Mini-Batch，每个step中使用的样本实际上是更小的数据集。
+在N个step内不更新变量，使所有Mini-Batch使用相同的模型变量来计算梯度，以确保计算出来得到相同的梯度和权重信息，算法上等价于使用原来没有切分的Batch size大小一样。即：
+θ_i=θ_(i-1)-lr*∑_(i=0)^N▒〖grad_i 〗
+最终在上面步骤中累积梯度会产生与使用全局Batch size大小相同的梯度总和。
+ 
+图 36 梯度累积
+自适应梯度求和
+与传统的分布式训练中的梯度更新不同，自适应梯度求和考虑到梯度的方向。在网络训练初期，不同batch获得的梯度更新方向基本是平行的，但是随着训练进行，梯度更新方向趋向于正交。而且网络的不同层梯度更新的正交性差异也是比较大的。
+ 
+图 37 平均、求和与自适应求和
+以两个训练节点为例，梯度的更新原理如下：
+█(w^'&=w_0-α⋅[(1-(g_2^T⋅g_1)/(2⋅∥g_1 ∥^2 ))⋅g_1+(1-(g_2^T⋅g_1)/(2⋅∥g_2 ∥^2 ))⋅g_2 ]@&=w_0-α⋅Adasum⁡(g_1,g_2 ) )
+其中，g1是训练节点1的梯度，g2是训练节点2的梯度。当训练节点拓展到n（n=2x,x=1,2,3⋯）个时，采用递归的方式来对问题进行分解，递归公式如下：
+Adasum⁡(g_(|0,n|) )=Adasum⁡(Adasum⁡(g_(|0,n/2|) ),Adasum⁡(g_(|n/2,n|) ))
+从上述公式中可见，论文中是对梯度更新，考虑到优化器（optimizer）对梯度的操作不一定满足线性转换，因此优化为对经过optimizer后的网络权重差值（delta weights）做adasum操作。
+另外，在实际应用过程中，为了优化通信开销，通常会采取Adasum和传统Reducesum混合的执行方式，如下图所示：
+ 
+图 38 Adasum与Reducesum混合执行方式
+降维训练
+一般网络训练，前期收敛比较快，后期收敛进入稳定阶段，收敛较慢。为了提升后期的收敛速度，降维训练将网络训练分为两个阶段。第一阶段，以传统的方式训练网络，保留N（N>32）个权重文件，建议放弃比较初期的权重文件，比如第一阶段训练50个epoch，从第21个epoch开始保存权重文件，每个epoch保存2个权重文件，则第一阶段结束有60个权重文件。第二阶段，加载第一阶段得到的权重文件，做PCA（Principal Component Analysis）降维，将权重从高维（M）降到低维（32），在低维上搜索权重的梯度下降方向和长度，然后反投影到高维，更新权重。
+一阶段训练：一阶优化器+PCA分解
+	使用传统一阶优化器训练。如resnet50使用SGD优化器训练70个epoch
+	过程中需要存储多个ckpt提供网络权重轨迹。如resnet50在30~70个epoch训练过程中，每个epoch存储4个ckpt文件。
+	PCA分解，输入: W: [sample, n]，PCA分解得到低维映射矩阵P: [k, n]并存储映射矩阵。
+二阶段训练：低维空间+二阶优化
+	加载一阶段采样末尾权重作为初始化
+	加载映射矩阵，将权重映射到低维空间采用二阶优化器，其中包含线搜索逻辑，step更新得到新权重，搜索判断条件是否符合，若不符合，weights重新加载为此次更新前的权重。
+	动态更新映射矩阵。由于映射矩阵存在误差，每个step前重新进行PCA分解。
+具体流程如下图所示：
+ 
+图 39 降维训练流程
+
+
+
+
+
 ### 安全可信
 昇思MindSpore考虑到企业部署使用时，对安全可信的丰富需求。在不断演进和完善各种面向安全可信方向的技术，并内置框架：
 **对抗性攻击防御**：对抗性攻击对机器学习模型安全的威胁日益严重。攻击者可以通过向原始样本添加人类不易感知的小扰动来欺骗机器学习模型。为了防御对抗性攻击，昇思MindSpore安全组件MindArmour提供了攻击（对抗样本生成）、防御（对抗样本检测和对抗性训练）、评估（模型鲁棒性评估和可视化）等功能。给定模型和输入数据，攻击模块提供简单的API，能够在黑盒和白盒攻击场景下生成相应的对抗样本。这些生成的对抗样本被输入防御模块，以提高机器学习模型的泛化能力和鲁棒性。防御模块还实现了多种检测算法，能够根据恶意内容或攻击行为来区分对抗样本和正常样本。评估模块提供了多种评估指标，开发者能够轻松地评估和可视化模型的鲁棒性。
