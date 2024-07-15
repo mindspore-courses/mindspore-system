@@ -33,6 +33,7 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 - 构造训练过程函数；
 - 调用函数进行训练。
 
+'''
   # Class definition  
   class Net(nn.Cell):  
       def __init__(self):  
@@ -65,7 +66,7 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
       for inputs, targets in dataset():  
           loss = train_step(inputs, targets) 
 
-
+'''
 
 通过函数式+面向对象融合编程，既保证了神经网络构建的易用性，同时提高了前向计算和反向传播等训练过程的灵活性，是昇思MindSpore推荐的默认编程范式。
 ### 动静统一
