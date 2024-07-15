@@ -33,41 +33,6 @@ To C：使能终端1+8+N，智能手机，大屏、音箱、眼镜、手表、�
 - 构造训练过程函数；
 - 调用函数进行训练。
 
-'''
-  # Class definition  
-  class Net(nn.Cell):  
-      def __init__(self):  
-          ......  
-      def construct(self, inputs):  
-          ......  
-    
-  # Object instantiation  
-  net = Net() # network  
-  loss_fn = nn.CrossEntropyLoss() # loss function  
-  optimizer = nn.Adam(net.trainable_params(), lr) # optimizer  
-    
-  # define forward function  
-  def forword_fn(inputs, targets):  
-      logits = net(inputs)  
-      loss = loss_fn(logits, targets)  
-      return loss, logits  
-    
-  # get grad function  
-  grad_fn = value_and_grad(forward_fn, None, optim.parameters, has_aux=True)  
-    
-  # define train step function 
-  def train_step(inputs, targets):  
-      # get values and gradients  
-      (loss, logits), grads = grad_fn(inputs, targets) 
-      optimizer(grads) # update gradient  
-      return loss, logits  
-    
-  for i in range(epochs):  
-      for inputs, targets in dataset():  
-          loss = train_step(inputs, targets) 
-
-'''
-
 通过函数式+面向对象融合编程，既保证了神经网络构建的易用性，同时提高了前向计算和反向传播等训练过程的灵活性，是昇思MindSpore推荐的默认编程范式。
 ### 动静统一
 传统AI框架主要有2种编程执行形态，静态图模式和动态图模式。静态图模式会基于开发者调用的框架接口，在编译执行时先生成神经网络的图结构，然后再执行图中涉及的计算操作。静态图模式能有效感知神经网络各层算子间的关系情况，基于编译技术进行有效的编译优化以提升性能。但传统静态图需要开发者感知构图接口，组建或调试网络比较复杂，且难于与常用Python库、自定义Python函数进行穿插使用。动态图模式，能有效解决静态图的编程较复杂问题，但由于程序按照代码的编写顺序执行，系统难于进行整图编译优化，导致相对性能优化空间较少，特别面向DSA等专有硬件的优化比较难于使能。
